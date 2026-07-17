@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Loader2, X, Briefcase, MapPin, Building2, CheckCircle2, ExternalLink, Calendar, Tag, Layers } from "lucide-react";
+import { Search, Loader2, X, Briefcase, MapPin, Building2, CheckCircle2, ExternalLink, Calendar, Tag, Layers, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface DiscoveredJob {
@@ -45,6 +45,31 @@ export default function DashboardTab({ platformName }: { platformName: string })
   const [jobsFound, setJobsFound] = useState(0);
   const [discoveredJobs, setDiscoveredJobs] = useState<DiscoveredJob[]>([]);
   const [expandedJob, setExpandedJob] = useState<number | null>(null);
+
+  const exportToCSV = () => {
+    if (discoveredJobs.length === 0) return;
+    
+    const headers = ["Job Title", "Company", "Location", "Job Site", "Date Posted", "Industry Match", "Reason for Match", "Job URL"];
+    const rows = discoveredJobs.map(job => [
+      `"${(job.job_title || "").replace(/"/g, '""')}"`,
+      `"${(job.company_name || "").replace(/"/g, '""')}"`,
+      `"${(job.location || "").replace(/"/g, '""')}"`,
+      `"${(job.job_site || "").replace(/"/g, '""')}"`,
+      `"${(job.date_posted || "").replace(/"/g, '""')}"`,
+      `"${(job.industry_match || "").replace(/"/g, '""')}"`,
+      `"${(job.reason_for_match || "").replace(/"/g, '""')}"`,
+      `"${(job.job_url || "").replace(/"/g, '""')}"`
+    ].join(","));
+    
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `jobpulse_${platformName.toLowerCase().replace(/\s+/g, '_')}_leads.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const addTags = (rawText: string, type: 'title' | 'industry') => {
     const newTags = rawText.split(/[,|]/).map(t => t.trim()).filter(t => t.length > 0);
@@ -402,12 +427,16 @@ export default function DashboardTab({ platformName }: { platformName: string })
         {discoveredJobs.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
             <Card className="bg-neutral-900 border-neutral-800 text-neutral-50 shadow-2xl">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-xl font-semibold flex items-center gap-2 text-white">
                   <Briefcase className="w-5 h-5 text-indigo-400" />
                   {platformName} Vacancies
                   <Badge className="bg-indigo-600/20 text-indigo-300 border border-indigo-500/20 ml-2">{discoveredJobs.length} jobs</Badge>
                 </CardTitle>
+                <Button onClick={exportToCSV} variant="outline" className="h-8 text-xs border-indigo-500/30 text-indigo-300 hover:text-indigo-200 hover:bg-indigo-500/20 bg-indigo-500/10">
+                  <Download className="w-3.5 h-3.5 mr-2" />
+                  Export CSV
+                </Button>
               </CardHeader>
               <CardContent className="p-0">
                 {/* Table Header */}
