@@ -243,6 +243,24 @@ async def execute_search_pipeline(session_id: str, request: SearchRequest):
 
 @app.post("/api/search", response_model=SearchResponse)
 async def start_search(request: SearchRequest, background_tasks: BackgroundTasks):
+    import re
+    cleaned_titles = []
+    for t in request.job_titles:
+        # Split by comma if multiple were pasted in one chip, then remove brackets and quotes
+        for sub_t in t.split(','):
+            cleaned = re.sub(r'[()\"\'`]', '', sub_t)
+            if cleaned.strip():
+                cleaned_titles.append(cleaned.strip())
+    request.job_titles = cleaned_titles
+    
+    cleaned_industries = []
+    for i in request.industries:
+        for sub_i in i.split(','):
+            cleaned = re.sub(r'[()\"\'`]', '', sub_i)
+            if cleaned.strip():
+                cleaned_industries.append(cleaned.strip())
+    request.industries = cleaned_industries
+
     session_id = str(uuid.uuid4())
     
     # Initialize an async queue for this session's events
