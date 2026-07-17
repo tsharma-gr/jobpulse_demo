@@ -32,6 +32,11 @@ export default function DashboardTab({ platformName }: { platformName: string })
     platformName === "Indeed" ? "All Dates" : 
     platformName === "LinkedIn" ? "Any time" : "Last 28 days"
   );
+  const [postedDates, setPostedDates] = useState({
+    "CV-Library": "Last 28 days",
+    "Indeed": "All Dates",
+    "LinkedIn": "Any time"
+  });
   const [isSearching, setIsSearching] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -98,7 +103,8 @@ export default function DashboardTab({ platformName }: { platformName: string })
           location, 
           radius: parseInt(radius), 
           posted_date: postedDate,
-          platforms: [platformName]
+          posted_dates: platformName === "Universal" ? postedDates : {},
+          platforms: platformName === "Universal" ? ["CV-Library", "Indeed", "LinkedIn"] : [platformName]
         })
       });
       const data = await res.json();
@@ -270,6 +276,40 @@ export default function DashboardTab({ platformName }: { platformName: string })
                   <option value="100">100 Miles</option>
                 </select>
               </div>
+              {platformName === "Universal" ? (
+                <div className="col-span-3 grid grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-neutral-300">CV-Library Date</label>
+                    <select value={postedDates["CV-Library"]} onChange={e => setPostedDates(p => ({...p, "CV-Library": e.target.value}))} className="flex h-9 w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-1 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:ring-indigo-500">
+                      <option value="Last 24 hours">Last 24 hours</option>
+                      <option value="Last 2 days">Last 2 days</option>
+                      <option value="Last 3 days">Last 3 days</option>
+                      <option value="Last 7 days">Last 7 days</option>
+                      <option value="Last 14 days">Last 14 days</option>
+                      <option value="Last 28 days">Last 28 days</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-neutral-300">Indeed Date</label>
+                    <select value={postedDates["Indeed"]} onChange={e => setPostedDates(p => ({...p, "Indeed": e.target.value}))} className="flex h-9 w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-1 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:ring-indigo-500">
+                      <option value="Last 24 hours">Last 24 hours</option>
+                      <option value="Last 3 days">Last 3 days</option>
+                      <option value="Last 7 days">Last 7 days</option>
+                      <option value="Last 14 days">Last 14 days</option>
+                      <option value="All Dates">All Dates</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-neutral-300">LinkedIn Date</label>
+                    <select value={postedDates["LinkedIn"]} onChange={e => setPostedDates(p => ({...p, "LinkedIn": e.target.value}))} className="flex h-9 w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-1 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:ring-indigo-500">
+                      <option value="Last 24 hours">Last 24 hours</option>
+                      <option value="Past week">Past week</option>
+                      <option value="Past month">Past month</option>
+                      <option value="Any time">Any time</option>
+                    </select>
+                  </div>
+                </div>
+              ) : (
               <div className="space-y-2">
                 <label className="text-xs font-medium text-neutral-300">Posted Date</label>
                 <select value={postedDate} onChange={e => setPostedDate(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-1 text-sm text-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
@@ -300,6 +340,7 @@ export default function DashboardTab({ platformName }: { platformName: string })
                   )}
                 </select>
               </div>
+              )}
             </div>
 
             <Button onClick={startSearch} disabled={isSearching || (!titleInput.trim() && jobTitles.length === 0) || !location} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-lg shadow-indigo-900/20 h-11">

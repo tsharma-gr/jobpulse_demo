@@ -5,8 +5,7 @@ import DashboardTab from "@/components/DashboardTab";
 
 export default function JobPulseDashboard() {
   const [activeTab, setActiveTab] = useState<string>("CV-Library");
-  
-  const platforms = ["CV-Library", "Indeed", "LinkedIn"];
+  const platforms = ["Universal", "CV-Library", "Indeed", "LinkedIn"];
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-50 p-8 font-sans selection:bg-indigo-500/30">
