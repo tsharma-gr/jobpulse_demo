@@ -8,9 +8,9 @@ import uvicorn
 def open_browser():
     """Wait for the server to start, then open the browser."""
     time.sleep(3)
-    # The Vercel URL the user provided
-    webbrowser.open("https://jobpulse-demo.vercel.app/")
-    print("Launched JobPulse AI Dashboard in your web browser!")
+    # Open the locally hosted static React app!
+    webbrowser.open("http://127.0.0.1:8000/")
+    print("Launched JobPulse AI Dashboard in your web browser!", flush=True)
 
 class DevNull:
     def write(self, msg): pass

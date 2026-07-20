@@ -388,3 +388,19 @@ async def shutdown_server():
         os._exit(0)
     asyncio.create_task(_exit())
     return {"status": "SHUTDOWN", "message": "JobPulse Engine is shutting down."}
+
+from fastapi.staticfiles import StaticFiles
+import os
+
+# Mount the Next.js static build directory to the root!
+# In PyInstaller, the base path is sys._MEIPASS or current dir
+if hasattr(sys, '_MEIPASS'):
+    out_dir = os.path.join(sys._MEIPASS, "out")
+else:
+    # When running locally from python
+    out_dir = os.path.join(os.path.dirname(__file__), "..", "..", "out")
+
+if os.path.exists(out_dir):
+    app.mount("/", StaticFiles(directory=out_dir, html=True), name="static")
+else:
+    print(f"Warning: Static UI folder not found at {out_dir}")

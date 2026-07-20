@@ -168,9 +168,7 @@ class IndeedAdapter(DiscoveryAdapter):
             
             if len(cards) == 0:
                 self.has_more_pages = False
-                screenshot_path = f"indeed_debug_page_{page_num}.png"
-                print(f"[IndeedAdapter] Saving debug screenshot to {screenshot_path}")
-                await self.page.screenshot(path=screenshot_path)
+                # Removed debug screenshot to save disk space
                 return jobs
             else:
                 self.has_more_pages = True

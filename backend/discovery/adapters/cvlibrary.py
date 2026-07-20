@@ -248,8 +248,7 @@ class CVLibraryAdapter(DiscoveryAdapter):
             print(f"[CVLibraryAdapter] Found {len(cards)} job cards on page {page_num}")
             
             if len(cards) == 0:
-                print("[CVLibraryAdapter] Saving debug screenshot to cvlibrary_debug.png...")
-                await self.page.screenshot(path="cvlibrary_debug.png")
+                # Removed debug screenshot to save disk space
                 self.has_more_pages = False
 
             source_counts = search_criteria.get("source_counts", {})
