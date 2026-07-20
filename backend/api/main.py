@@ -28,6 +28,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
 
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class PNAMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.method == "OPTIONS":
+            response = await call_next(request)
+            response.headers["Access-Control-Allow-Private-Network"] = "true"
+            return response
+        response = await call_next(request)
+        response.headers["Access-Control-Allow-Private-Network"] = "true"
+        return response
+
 # Enable CORS for Next.js frontend and Vercel deployment
 app.add_middleware(
     CORSMiddleware,
@@ -36,6 +48,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(PNAMiddleware)
 
 # --- Pydantic Models ---
 
