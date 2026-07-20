@@ -92,8 +92,7 @@ export default function DashboardTab({ platformName }: { platformName: string })
     setLogs([]); setJobsFound(0); setDiscoveredJobs([]); setExpandedJob(null);
 
     try {
-      const RAW_API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-      const API_BASE = RAW_API.replace(/\/$/, "");
+      const API_BASE = "http://127.0.0.1:8000";
       const res = await fetch(`${API_BASE}/api/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -120,8 +119,7 @@ export default function DashboardTab({ platformName }: { platformName: string })
     if (!sessionId) return;
     try {
       setStatusText("Cancelling Search...");
-      const RAW_API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-      const API_BASE = RAW_API.replace(/\/$/, "");
+      const API_BASE = "http://127.0.0.1:8000";
       await fetch(`${API_BASE}/api/search/${sessionId}/cancel`, { method: "POST" });
     } catch (e) {
       console.error("Failed to cancel search:", e);
@@ -130,8 +128,7 @@ export default function DashboardTab({ platformName }: { platformName: string })
 
   useEffect(() => {
     if (!sessionId) return;
-    const RAW_API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-    const API_BASE = RAW_API.replace(/\/$/, "");
+    const API_BASE = "http://127.0.0.1:8000";
     
     let isMounted = true;
     const abortController = new AbortController();
