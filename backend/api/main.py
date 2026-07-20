@@ -55,10 +55,13 @@ class SearchResponse(BaseModel):
 
 # --- In-Memory State for SSE (in production, use Redis pub/sub) ---
 session_event_queues = {}
+session_cancel_events = {}
 
 from backend.discovery.orchestrator import discovery_orchestrator
 from backend.crawler.manager import crawler_manager
 from backend.ai.deepseek_parser import deepseek_parser
+import os
+import signal
 
 # --- Global Agency Blocklist ---
 # Hardcoded blocklist to instantly reject disguised recruitment agencies.
@@ -123,6 +126,11 @@ async def execute_search_pipeline(session_id: str, request: SearchRequest):
                 if job is None: # Sentinel
                     break
                     
+                # Check for cancellation
+                if session_cancel_events.get(session_id, asyncio.Event()).is_set():
+                    print(f"[{session_id}] AI Consumer detected cancellation. Stopping.")
+                    break
+
                 if job.job_url in seen_urls:
                     job_queue.task_done()
                     continue
@@ -175,6 +183,12 @@ async def execute_search_pipeline(session_id: str, request: SearchRequest):
         try:
             while page <= 9999: # Practically infinite, will break when no more jobs found
                 
+                # Check for cancellation
+                if session_cancel_events.get(session_id, asyncio.Event()).is_set():
+                    print(f"[{session_id}] Search pipeline cancelled by user.")
+                    await push_event("SEARCH_CANCELLED")
+                    break
+
                 if not local_orchestrator.adapters:
                     print(f"[{session_id}] All adapters have finished.")
                     break
@@ -238,6 +252,8 @@ async def execute_search_pipeline(session_id: str, request: SearchRequest):
     finally:
         # Signal the SSE stream to close
         await queue.put(None)
+        if session_id in session_cancel_events:
+            del session_cancel_events[session_id]
 
 # --- API Endpoints ---
 
@@ -265,6 +281,7 @@ async def start_search(request: SearchRequest, background_tasks: BackgroundTasks
     
     # Initialize an async queue for this session's events
     session_event_queues[session_id] = asyncio.Queue()
+    session_cancel_events[session_id] = asyncio.Event()
     
     # Kick off the search pipeline in the background
     background_tasks.add_task(execute_search_pipeline, session_id, request)
@@ -339,3 +356,22 @@ async def get_metrics():
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "app": settings.APP_NAME, "timestamp": datetime.now().isoformat()}
+
+@app.post("/api/search/{session_id}/cancel")
+async def cancel_search(session_id: str):
+    """Cancels an active search pipeline."""
+    if session_id in session_cancel_events:
+        session_cancel_events[session_id].set()
+        return {"status": "CANCELLED", "message": "Search cancellation requested."}
+    raise HTTPException(status_code=404, detail="Session not found.")
+
+@app.post("/api/shutdown")
+async def shutdown_server():
+    """Gracefully shuts down the background PyInstaller server."""
+    print("Shutdown requested via API. Exiting...")
+    # Delay exit slightly so the response can be sent
+    async def _exit():
+        await asyncio.sleep(0.5)
+        os._exit(0)
+    asyncio.create_task(_exit())
+    return {"status": "SHUTDOWN", "message": "JobPulse Engine is shutting down."}
