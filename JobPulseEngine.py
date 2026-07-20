@@ -12,7 +12,17 @@ def open_browser():
     webbrowser.open("https://jobpulse-demo.vercel.app/")
     print("Launched JobPulse AI Dashboard in your web browser!")
 
+class DevNull:
+    def write(self, msg): pass
+    def flush(self): pass
+    def isatty(self): return False
+
 def main():
+    if sys.stdout is None:
+        sys.stdout = DevNull()
+    if sys.stderr is None:
+        sys.stderr = DevNull()
+        
     # Detect if we are running in a PyInstaller bundle
     if getattr(sys, 'frozen', False):
         # We are running as a compiled PyInstaller .exe
