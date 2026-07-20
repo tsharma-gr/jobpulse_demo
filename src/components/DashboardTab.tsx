@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Loader2, X, Briefcase, MapPin, Building2, CheckCircle2, ExternalLink, Calendar, Tag, Layers, Download } from "lucide-react";
+import { Search, Loader2, X, Briefcase, MapPin, Building2, CheckCircle2, ExternalLink, Calendar, Tag, Layers } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface DiscoveredJob {
@@ -45,31 +45,6 @@ export default function DashboardTab({ platformName }: { platformName: string })
   const [jobsFound, setJobsFound] = useState(0);
   const [discoveredJobs, setDiscoveredJobs] = useState<DiscoveredJob[]>([]);
   const [expandedJob, setExpandedJob] = useState<number | null>(null);
-
-  const exportToCSV = () => {
-    if (discoveredJobs.length === 0) return;
-    
-    const headers = ["Job Title", "Company", "Location", "Job Site", "Date Posted", "Industry Match", "Reason for Match", "Job URL"];
-    const rows = discoveredJobs.map(job => [
-      `"${(job.job_title || "").replace(/"/g, '""')}"`,
-      `"${(job.company_name || "").replace(/"/g, '""')}"`,
-      `"${(job.location || "").replace(/"/g, '""')}"`,
-      `"${(job.job_site || "").replace(/"/g, '""')}"`,
-      `"${(job.date_posted || "").replace(/"/g, '""')}"`,
-      `"${(job.industry_match || "").replace(/"/g, '""')}"`,
-      `"${(job.reason_for_match || "").replace(/"/g, '""')}"`,
-      `"${(job.job_url || "").replace(/"/g, '""')}"`
-    ].join(","));
-    
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `jobpulse_${platformName.toLowerCase().replace(/\s+/g, '_')}_leads.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   const addTags = (rawText: string, type: 'title' | 'industry') => {
     const newTags = rawText.split(/[,|]/).map(t => t.trim()).filter(t => t.length > 0);
@@ -138,6 +113,18 @@ export default function DashboardTab({ platformName }: { platformName: string })
       console.error(e);
       setStatusText("Failed to connect to backend API");
       setIsSearching(false);
+    }
+  };
+
+  const cancelSearch = async () => {
+    if (!sessionId) return;
+    try {
+      setStatusText("Cancelling Search...");
+      const RAW_API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API_BASE = RAW_API.replace(/\/$/, "");
+      await fetch(`${API_BASE}/api/search/${sessionId}/cancel`, { method: "POST" });
+    } catch (e) {
+      console.error("Failed to cancel search:", e);
     }
   };
 
@@ -211,6 +198,10 @@ export default function DashboardTab({ platformName }: { platformName: string })
                       setJobsFound(data.jobs.length);
                   }
                   addLog(`Search finished. ${data.jobs_ready || 0} jobs ready for review.`);
+                  setIsSearching(false);
+                } else if (eventType === "SEARCH_CANCELLED") {
+                  setStatusText("Search Cancelled"); setProgress(100);
+                  addLog("User cancelled the search pipeline.");
                   setIsSearching(false);
                 } else if (eventType === "ERROR") {
                   setStatusText("Error Occurred"); addLog(`Error: ${data.detail}`); setIsSearching(false);
@@ -368,9 +359,15 @@ export default function DashboardTab({ platformName }: { platformName: string })
               )}
             </div>
 
-            <Button onClick={startSearch} disabled={isSearching || (!titleInput.trim() && jobTitles.length === 0) || !location} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-lg shadow-indigo-900/20 h-11">
-              {isSearching ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Running {platformName}...</> : `Start ${platformName} AI`}
-            </Button>
+            {!isSearching ? (
+              <Button onClick={startSearch} disabled={(!titleInput.trim() && jobTitles.length === 0) || !location} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-lg shadow-indigo-900/20 h-11">
+                Start {platformName} AI
+              </Button>
+            ) : (
+              <Button onClick={cancelSearch} variant="destructive" className="w-full font-medium shadow-lg shadow-red-900/20 h-11">
+                <X className="mr-2 h-4 w-4" /> Stop Search
+              </Button>
+            )}
           </CardContent>
         </Card>
 
@@ -427,16 +424,12 @@ export default function DashboardTab({ platformName }: { platformName: string })
         {discoveredJobs.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
             <Card className="bg-neutral-900 border-neutral-800 text-neutral-50 shadow-2xl">
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader>
                 <CardTitle className="text-xl font-semibold flex items-center gap-2 text-white">
                   <Briefcase className="w-5 h-5 text-indigo-400" />
                   {platformName} Vacancies
                   <Badge className="bg-indigo-600/20 text-indigo-300 border border-indigo-500/20 ml-2">{discoveredJobs.length} jobs</Badge>
                 </CardTitle>
-                <Button onClick={exportToCSV} variant="outline" className="h-8 text-xs border-indigo-500/30 text-indigo-300 hover:text-indigo-200 hover:bg-indigo-500/20 bg-indigo-500/10">
-                  <Download className="w-3.5 h-3.5 mr-2" />
-                  Export CSV
-                </Button>
               </CardHeader>
               <CardContent className="p-0">
                 {/* Table Header */}
