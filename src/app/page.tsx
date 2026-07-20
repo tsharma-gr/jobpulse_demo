@@ -11,7 +11,7 @@ export default function JobPulseDashboard() {
   const shutdownEngine = async () => {
     if (confirm("Are you sure you want to turn off the background JobPulse Engine? You will need to reopen the .exe file to use the app again.")) {
       try {
-        const RAW_API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const RAW_API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
         const API_BASE = RAW_API.replace(/\/$/, "");
         await fetch(`${API_BASE}/api/shutdown`, { method: "POST" });
         alert("Engine shut down successfully. You can safely close this browser tab.");
