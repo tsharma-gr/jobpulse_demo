@@ -116,6 +116,18 @@ export default function DashboardTab({ platformName }: { platformName: string })
     }
   };
 
+  const cancelSearch = async () => {
+    if (!sessionId) return;
+    try {
+      setStatusText("Cancelling Search...");
+      const RAW_API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API_BASE = RAW_API.replace(/\/$/, "");
+      await fetch(`${API_BASE}/api/search/${sessionId}/cancel`, { method: "POST" });
+    } catch (e) {
+      console.error("Failed to cancel search:", e);
+    }
+  };
+
   useEffect(() => {
     if (!sessionId) return;
     const RAW_API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -186,6 +198,10 @@ export default function DashboardTab({ platformName }: { platformName: string })
                       setJobsFound(data.jobs.length);
                   }
                   addLog(`Search finished. ${data.jobs_ready || 0} jobs ready for review.`);
+                  setIsSearching(false);
+                } else if (eventType === "SEARCH_CANCELLED") {
+                  setStatusText("Search Cancelled"); setProgress(100);
+                  addLog("User cancelled the search pipeline.");
                   setIsSearching(false);
                 } else if (eventType === "ERROR") {
                   setStatusText("Error Occurred"); addLog(`Error: ${data.detail}`); setIsSearching(false);
@@ -343,9 +359,15 @@ export default function DashboardTab({ platformName }: { platformName: string })
               )}
             </div>
 
-            <Button onClick={startSearch} disabled={isSearching || (!titleInput.trim() && jobTitles.length === 0) || !location} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-lg shadow-indigo-900/20 h-11">
-              {isSearching ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Running {platformName}...</> : `Start ${platformName} AI`}
-            </Button>
+            {!isSearching ? (
+              <Button onClick={startSearch} disabled={(!titleInput.trim() && jobTitles.length === 0) || !location} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-lg shadow-indigo-900/20 h-11">
+                Start {platformName} AI
+              </Button>
+            ) : (
+              <Button onClick={cancelSearch} variant="destructive" className="w-full font-medium shadow-lg shadow-red-900/20 h-11">
+                <X className="mr-2 h-4 w-4" /> Stop Search
+              </Button>
+            )}
           </CardContent>
         </Card>
 
